@@ -1,0 +1,25 @@
+# Build directories
+Builds/
+JuceLibraryCode/include_*
+JuceLibraryCode/ReadMe.txt
+
+# Xcode
+*.xcuserdata
+*.xcworkspace
+DerivedData/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# Build outputs
+*.vst3
+*.component
+*.app
+
+# macOS
+.DS_Store
+._*
