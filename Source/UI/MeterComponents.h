@@ -32,6 +32,9 @@ private:
     float peakDecayRate = 20.0f; // dB per second
     float timeSincePeak = 0.0f;
 
+    // Threshold below which the meter is considered "no signal"
+    static constexpr float noSignalThreshold = -60.0f;
+
     float getYForDb(float db) const;
 };
 
@@ -99,9 +102,12 @@ public:
 
     void setCorrelation(float correlation);
 
+    void setHasSignal(bool hasSignal);
+
 private:
-    float currentCorrelation = 1.0f;
-    float displayCorrelation = 1.0f;
+    float currentCorrelation = 0.0f;  // Default to center (0) when no signal
+    float displayCorrelation = 0.0f;
+    bool hasSignal = false;  // Track whether there's audio signal
 };
 
 //==============================================================================
@@ -116,10 +122,12 @@ public:
     void timerCallback() override;
 
     void setBalance(float balance); // -1 = left, +1 = right
+    void setHasSignal(bool hasSignal);
 
 private:
     float currentBalance = 0.0f;
     float displayBalance = 0.0f;
+    bool hasSignal = false;  // Track whether there's audio signal
 };
 
 //==============================================================================
@@ -146,10 +154,16 @@ private:
     CorrelationMeter correlationMeter;
     BalanceMeter balanceMeter;
 
+    // Main labels
     juce::Label inputLabel { {}, "IN" };
     juce::Label outputLabel { {}, "OUT" };
     juce::Label grLabel { {}, "GR" };
     juce::Label lufsLabel { {}, "LUFS" };
     juce::Label corrLabel { {}, "CORR" };
     juce::Label balLabel { {}, "BAL" };
+
+    // Scale reference labels
+    juce::Label inScaleLabel { {}, "dBFS" };
+    juce::Label outScaleLabel { {}, "dBFS" };
+    juce::Label grScaleLabel { {}, "dB" };
 };

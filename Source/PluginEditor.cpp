@@ -305,15 +305,25 @@ void MasterBusAudioProcessorEditor::timerCallback()
 {
     // Update meters
     auto& meter = audioProcessor.getLoudnessMeter();
-    meterPanel.getInputMeter().setLevel(audioProcessor.getInputLevel());
-    meterPanel.getOutputMeter().setLevel(audioProcessor.getOutputLevel());
+    float inputLevel = audioProcessor.getInputLevel();
+    float outputLevel = audioProcessor.getOutputLevel();
+
+    meterPanel.getInputMeter().setLevel(inputLevel);
+    meterPanel.getOutputMeter().setLevel(outputLevel);
     meterPanel.getGRMeter().setGainReduction(audioProcessor.getGainReduction());
     meterPanel.getLoudnessMeter().setMomentary(meter.getMomentaryLoudness());
     meterPanel.getLoudnessMeter().setShortTerm(meter.getShortTermLoudness());
     meterPanel.getLoudnessMeter().setIntegrated(meter.getIntegratedLoudness());
     meterPanel.getLoudnessMeter().setTruePeak(meter.getTruePeakLevel());
+
+    // Determine if there's actual signal for correlation/balance meters
+    // Signal is considered present if input level is above -60 dBFS
+    bool hasSignal = inputLevel > -60.0f;
+
     meterPanel.getCorrelationMeter().setCorrelation(meter.getStereoCorrelation());
+    meterPanel.getCorrelationMeter().setHasSignal(hasSignal);
     meterPanel.getBalanceMeter().setBalance(meter.getStereoBalance());
+    meterPanel.getBalanceMeter().setHasSignal(hasSignal);
 
     // Update spectrum analyzer
     spectrumAnalyzer.pushPreBuffer(audioProcessor.getPreEQBuffer());
