@@ -5,7 +5,7 @@
               companyCopyright="2024" companyWebsite="https://github.com/ianfletcher314/masterbus"
               pluginFormats="buildAU,buildVST3" pluginCharacteristicsValue=""
               pluginName="MasterBus" pluginDesc="Mastering EQ and Compressor"
-              pluginManufacturer="Fletcher" pluginManufacturerCode="Cmps"
+              pluginManufacturer="Fletcher" pluginManufacturerCode="Flet"
               pluginCode="Mbus" pluginVST3Category="EQ,Dynamics" pluginAUMainType="'aufx'">
   <MAINGROUP id="MAINGRP" name="MasterBus">
     <GROUP id="SOURCE" name="Source">

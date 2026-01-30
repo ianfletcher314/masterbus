@@ -56,7 +56,7 @@
  #define JucePlugin_ManufacturerEmail      ""
 #endif
 #ifndef  JucePlugin_ManufacturerCode
- #define JucePlugin_ManufacturerCode       0x436d7073
+ #define JucePlugin_ManufacturerCode       0x466c6574
 #endif
 #ifndef  JucePlugin_PluginCode
  #define JucePlugin_PluginCode             0x4d627573
