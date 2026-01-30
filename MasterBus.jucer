@@ -1,11 +1,11 @@
 <?xml version="1.0" encoding="UTF-8"?>
 
 <JUCERPROJECT id="MSTRBUS1" name="MasterBus" projectType="audioplug" useAppConfig="0"
-              addUsingNamespaceToJuceHeader="0" jucerFormatVersion="1" companyName="Compstortion"
+              addUsingNamespaceToJuceHeader="0" jucerFormatVersion="1" companyName="Fletcher"
               companyCopyright="2024" companyWebsite="https://github.com/ianfletcher314/masterbus"
               pluginFormats="buildAU,buildVST3" pluginCharacteristicsValue=""
               pluginName="MasterBus" pluginDesc="Mastering EQ and Compressor"
-              pluginManufacturer="Compstortion" pluginManufacturerCode="Cmps"
+              pluginManufacturer="Fletcher" pluginManufacturerCode="Cmps"
               pluginCode="Mbus" pluginVST3Category="EQ,Dynamics" pluginAUMainType="'aufx'">
   <MAINGROUP id="MAINGRP" name="MasterBus">
     <GROUP id="SOURCE" name="Source">

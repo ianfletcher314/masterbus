@@ -142,7 +142,7 @@ void SpectrumAnalyzer::timerCallback()
     // Process main buffer
     processFFT(sampleBuffer, magnitudes);
 
-    // Smooth magnitudes
+    // Smooth magnitudes with increased smoothing for cleaner look
     for (int i = 0; i < NUM_BINS; ++i)
     {
         smoothedMagnitudes[i] = smoothedMagnitudes[i] * smoothingFactor + magnitudes[i] * (1.0f - smoothingFactor);
@@ -176,74 +176,56 @@ void SpectrumAnalyzer::paint(juce::Graphics& g)
 {
     auto bounds = getLocalBounds().toFloat();
 
-    // Background
-    g.setColour(MasterBusLookAndFeel::Colors::panelBackground);
-    g.fillRoundedRectangle(bounds, 4.0f);
+    // Dark background
+    g.setColour(juce::Colour(0xff0d0d0d));
+    g.fillRoundedRectangle(bounds, 6.0f);
 
-    // Draw grid
+    // Subtle border
+    g.setColour(juce::Colour(0xff2a2a2a));
+    g.drawRoundedRectangle(bounds.reduced(0.5f), 6.0f, 1.0f);
+
+    // Draw grid first (behind spectrum)
     drawGrid(g);
 
     // Draw spectrums
-    auto analyzerBounds = bounds.reduced(30.0f, 20.0f);
+    auto analyzerBounds = getAnalyzerBounds();
     g.reduceClipRegion(analyzerBounds.toNearestInt());
 
     if (showPre && showPost)
     {
         // Show both pre and post
-        drawSpectrum(g, smoothedPreMagnitudes, MasterBusLookAndFeel::Colors::textDim, 0.5f);
-        drawSpectrum(g, smoothedPostMagnitudes, MasterBusLookAndFeel::Colors::eqAccent, 0.8f);
+        drawSpectrum(g, smoothedPreMagnitudes, juce::Colour(0xff505050), 0.4f, false);
+        drawSpectrum(g, smoothedPostMagnitudes, juce::Colour(0xff00d4ff), 1.0f, true);
     }
     else if (showPost)
     {
-        drawSpectrum(g, smoothedPostMagnitudes, MasterBusLookAndFeel::Colors::eqAccent, 0.8f);
+        drawSpectrum(g, smoothedPostMagnitudes, juce::Colour(0xff00d4ff), 1.0f, true);
     }
     else if (showPre)
     {
-        drawSpectrum(g, smoothedPreMagnitudes, MasterBusLookAndFeel::Colors::textDim, 0.8f);
+        drawSpectrum(g, smoothedPreMagnitudes, juce::Colour(0xff00d4ff), 1.0f, true);
     }
     else
     {
-        drawSpectrum(g, smoothedMagnitudes, MasterBusLookAndFeel::Colors::accent, 0.8f);
-    }
-
-    // Draw peak hold
-    if (peakHoldEnabled)
-    {
-        juce::Path peakPath;
-        bool pathStarted = false;
-
-        for (int i = 1; i < NUM_BINS; ++i)
-        {
-            float freq = getFrequencyForBin(i);
-            if (freq < minFreq || freq > maxFreq) continue;
-
-            float x = getXForFrequency(freq);
-            float y = getYForDecibels(peakMagnitudes[i]);
-
-            if (!pathStarted)
-            {
-                peakPath.startNewSubPath(x, y);
-                pathStarted = true;
-            }
-            else
-            {
-                peakPath.lineTo(x, y);
-            }
-        }
-
-        g.setColour(MasterBusLookAndFeel::Colors::meterYellow.withAlpha(0.5f));
-        g.strokePath(peakPath, juce::PathStrokeType(1.0f));
+        drawSpectrum(g, smoothedMagnitudes, juce::Colour(0xff00d4ff), 1.0f, true);
     }
 }
 
 void SpectrumAnalyzer::drawSpectrum(juce::Graphics& g, const std::array<float, NUM_BINS>& mags,
-                                     juce::Colour colour, float alpha)
+                                     juce::Colour colour, float alpha, bool drawFill)
 {
+    auto analyzerBounds = getAnalyzerBounds();
+
+    // Build smooth path using cubic interpolation
     juce::Path path;
     juce::Path fillPath;
     bool pathStarted = false;
 
-    float bottom = getYForDecibels(minDb);
+    float bottom = analyzerBounds.getBottom();
+    float prevX = 0, prevY = 0;
+
+    // Collect points for smoothing
+    std::vector<juce::Point<float>> points;
 
     for (int i = 1; i < NUM_BINS; ++i)
     {
@@ -253,78 +235,153 @@ void SpectrumAnalyzer::drawSpectrum(juce::Graphics& g, const std::array<float, N
         float x = getXForFrequency(freq);
         float y = getYForDecibels(mags[i]);
 
-        if (!pathStarted)
-        {
-            path.startNewSubPath(x, y);
-            fillPath.startNewSubPath(x, bottom);
-            fillPath.lineTo(x, y);
-            pathStarted = true;
-        }
-        else
-        {
-            path.lineTo(x, y);
-            fillPath.lineTo(x, y);
-        }
+        // Clamp y to analyzer bounds
+        y = juce::jlimit(analyzerBounds.getY(), analyzerBounds.getBottom(), y);
+
+        points.push_back({x, y});
     }
+
+    if (points.size() < 2) return;
+
+    // Apply additional smoothing by averaging neighboring points
+    std::vector<juce::Point<float>> smoothedPoints;
+    const int smoothWindow = 3;
+    for (size_t i = 0; i < points.size(); ++i)
+    {
+        float avgX = 0, avgY = 0;
+        int count = 0;
+        for (int j = -smoothWindow; j <= smoothWindow; ++j)
+        {
+            int idx = static_cast<int>(i) + j;
+            if (idx >= 0 && idx < static_cast<int>(points.size()))
+            {
+                avgX += points[idx].x;
+                avgY += points[idx].y;
+                count++;
+            }
+        }
+        smoothedPoints.push_back({avgX / count, avgY / count});
+    }
+
+    // Create smooth curve using quadratic bezier approximation
+    path.startNewSubPath(smoothedPoints[0]);
+    fillPath.startNewSubPath(smoothedPoints[0].x, bottom);
+    fillPath.lineTo(smoothedPoints[0]);
+
+    for (size_t i = 1; i < smoothedPoints.size(); ++i)
+    {
+        auto& p0 = smoothedPoints[i - 1];
+        auto& p1 = smoothedPoints[i];
+
+        // Simple line for closely spaced points, quadratic for smoother transitions
+        float midX = (p0.x + p1.x) * 0.5f;
+        float midY = (p0.y + p1.y) * 0.5f;
+
+        path.quadraticTo(p0.x, p0.y, midX, midY);
+        fillPath.quadraticTo(p0.x, p0.y, midX, midY);
+    }
+
+    // Finish to last point
+    path.lineTo(smoothedPoints.back());
+    fillPath.lineTo(smoothedPoints.back());
 
     // Close fill path
-    if (pathStarted)
+    fillPath.lineTo(smoothedPoints.back().x, bottom);
+    fillPath.closeSubPath();
+
+    if (drawFill)
     {
-        float lastX = getXForFrequency(maxFreq);
-        fillPath.lineTo(lastX, bottom);
-        fillPath.closeSubPath();
+        // Create gradient fill from white/cyan at top to transparent at bottom
+        juce::ColourGradient gradient(
+            colour.withAlpha(0.35f * alpha),
+            analyzerBounds.getX(), analyzerBounds.getY(),
+            colour.withAlpha(0.0f),
+            analyzerBounds.getX(), analyzerBounds.getBottom(),
+            false);
 
-        // Draw fill
-        g.setColour(colour.withAlpha(alpha * 0.2f));
+        g.setGradientFill(gradient);
         g.fillPath(fillPath);
-
-        // Draw line
-        g.setColour(colour.withAlpha(alpha));
-        g.strokePath(path, juce::PathStrokeType(1.5f));
     }
+
+    // Draw line with slight glow effect
+    if (drawFill)
+    {
+        // Glow layer
+        g.setColour(colour.withAlpha(0.15f * alpha));
+        g.strokePath(path, juce::PathStrokeType(4.0f, juce::PathStrokeType::curved, juce::PathStrokeType::rounded));
+    }
+
+    // Main line
+    g.setColour(colour.withAlpha(0.9f * alpha));
+    g.strokePath(path, juce::PathStrokeType(1.5f, juce::PathStrokeType::curved, juce::PathStrokeType::rounded));
 }
 
 void SpectrumAnalyzer::drawGrid(juce::Graphics& g)
 {
     auto bounds = getLocalBounds().toFloat();
+    auto analyzerBounds = getAnalyzerBounds();
 
-    // Frequency grid lines
-    std::array<float, 10> freqLines = { 20.0f, 50.0f, 100.0f, 200.0f, 500.0f,
-                                         1000.0f, 2000.0f, 5000.0f, 10000.0f, 20000.0f };
+    // Frequency grid lines - key frequencies
+    std::array<float, 5> majorFreqLines = { 20.0f, 100.0f, 1000.0f, 10000.0f, 20000.0f };
+    std::array<float, 4> minorFreqLines = { 50.0f, 200.0f, 500.0f, 2000.0f };
 
-    g.setColour(MasterBusLookAndFeel::Colors::gridLine);
     g.setFont(juce::Font(juce::FontOptions(10.0f)));
 
-    for (float freq : freqLines)
+    // Draw minor frequency lines (dimmer)
+    g.setColour(juce::Colour(0xff1a1a1a));
+    for (float freq : minorFreqLines)
     {
         float x = getXForFrequency(freq);
-        g.drawLine(x, bounds.getY() + 15.0f, x, bounds.getBottom() - 20.0f, 0.5f);
+        g.drawLine(x, analyzerBounds.getY(), x, analyzerBounds.getBottom(), 0.5f);
+    }
 
-        // Labels
+    // Draw major frequency lines and labels
+    g.setColour(juce::Colour(0xff2a2a2a));
+    for (float freq : majorFreqLines)
+    {
+        float x = getXForFrequency(freq);
+        g.drawLine(x, analyzerBounds.getY(), x, analyzerBounds.getBottom(), 1.0f);
+
+        // Labels at bottom
         juce::String label;
         if (freq >= 1000.0f)
-            label = juce::String(static_cast<int>(freq / 1000.0f)) + "k";
+            label = juce::String(static_cast<int>(freq / 1000.0f)) + "kHz";
         else
-            label = juce::String(static_cast<int>(freq));
+            label = juce::String(static_cast<int>(freq)) + "Hz";
 
-        g.setColour(MasterBusLookAndFeel::Colors::textDim);
-        g.drawText(label, static_cast<int>(x - 15), static_cast<int>(bounds.getBottom() - 18),
-                   30, 15, juce::Justification::centred);
-        g.setColour(MasterBusLookAndFeel::Colors::gridLine);
+        g.setColour(juce::Colour(0xff606060));
+        g.drawText(label, static_cast<int>(x - 25), static_cast<int>(analyzerBounds.getBottom() + 2),
+                   50, 16, juce::Justification::centred);
+        g.setColour(juce::Colour(0xff2a2a2a));
     }
 
-    // dB grid lines
-    for (float db = minDb; db <= maxDb; db += 12.0f)
+    // dB grid lines - every 10dB from -60 to 0
+    std::array<float, 7> dbLines = { -60.0f, -50.0f, -40.0f, -30.0f, -20.0f, -10.0f, 0.0f };
+
+    for (float db : dbLines)
     {
         float y = getYForDecibels(db);
-        g.drawLine(bounds.getX() + 25.0f, y, bounds.getRight() - 5.0f, y, 0.5f);
 
-        // Labels
-        g.setColour(MasterBusLookAndFeel::Colors::textDim);
-        g.drawText(juce::String(static_cast<int>(db)), 2, static_cast<int>(y - 7), 22, 14,
-                   juce::Justification::centredRight);
-        g.setColour(MasterBusLookAndFeel::Colors::gridLine);
+        // Dim line for intermediate values, brighter for 0dB and -60dB
+        if (db == 0.0f || db == -60.0f)
+            g.setColour(juce::Colour(0xff2a2a2a));
+        else
+            g.setColour(juce::Colour(0xff1a1a1a));
+
+        g.drawLine(analyzerBounds.getX(), y, analyzerBounds.getRight(), y, 0.5f);
+
+        // Labels on left side
+        g.setColour(juce::Colour(0xff606060));
+        juce::String dbLabel = juce::String(static_cast<int>(db));
+        g.drawText(dbLabel, 4, static_cast<int>(y - 8), 28, 16, juce::Justification::centredRight);
     }
+}
+
+juce::Rectangle<float> SpectrumAnalyzer::getAnalyzerBounds() const
+{
+    auto bounds = getLocalBounds().toFloat();
+    // Leave space for labels: left for dB, bottom for Hz
+    return bounds.reduced(35.0f, 8.0f).withTrimmedBottom(18.0f);
 }
 
 float SpectrumAnalyzer::getFrequencyForBin(int bin) const
@@ -334,9 +391,9 @@ float SpectrumAnalyzer::getFrequencyForBin(int bin) const
 
 float SpectrumAnalyzer::getXForFrequency(float freq) const
 {
-    auto bounds = getLocalBounds().toFloat();
-    float left = bounds.getX() + 30.0f;
-    float right = bounds.getRight() - 5.0f;
+    auto analyzerBounds = getAnalyzerBounds();
+    float left = analyzerBounds.getX();
+    float right = analyzerBounds.getRight();
 
     float logMin = std::log10(minFreq);
     float logMax = std::log10(maxFreq);
@@ -348,9 +405,9 @@ float SpectrumAnalyzer::getXForFrequency(float freq) const
 
 float SpectrumAnalyzer::getYForDecibels(float db) const
 {
-    auto bounds = getLocalBounds().toFloat();
-    float top = bounds.getY() + 15.0f;
-    float bottom = bounds.getBottom() - 20.0f;
+    auto analyzerBounds = getAnalyzerBounds();
+    float top = analyzerBounds.getY();
+    float bottom = analyzerBounds.getBottom();
 
     float clampedDb = std::clamp(db, minDb, maxDb);
     float proportion = (clampedDb - minDb) / (maxDb - minDb);

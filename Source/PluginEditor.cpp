@@ -44,28 +44,44 @@ MasterBusAudioProcessorEditor::MasterBusAudioProcessorEditor(MasterBusAudioProce
     }
     abcdButtons[0].setToggleState(true, juce::dontSendNotification);
 
-    // EQ Group
-    addAndMakeVisible(eqGroup);
-    eqGroup.setText("EQ");
-    eqGroup.setColour(juce::GroupComponent::outlineColourId, MasterBusLookAndFeel::Colors::eqAccent);
-    eqGroup.setColour(juce::GroupComponent::textColourId, MasterBusLookAndFeel::Colors::eqAccent);
+    // Panel toggle buttons
+    addAndMakeVisible(eqToggleButton);
+    addAndMakeVisible(compToggleButton);
+    eqToggleButton.setClickingTogglesState(true);
+    compToggleButton.setClickingTogglesState(true);
+    eqToggleButton.onClick = [this] {
+        eqPanelVisible = eqToggleButton.getToggleState();
+        updatePanelVisibility();
+        resized();
+    };
+    compToggleButton.onClick = [this] {
+        compPanelVisible = compToggleButton.getToggleState();
+        updatePanelVisibility();
+        resized();
+    };
+
+    // Setup collapsible panels
+    addChildComponent(eqPanel);
+    addChildComponent(compPanel);
+    eqPanel.setContentComponent(&eqContent);
+    compPanel.setContentComponent(&compContent);
 
     // HPF
     hpfFreqSlider.setLookAndFeel(&eqLookAndFeel);
     setupRotarySlider(hpfFreqSlider);
     hpfSlopeBox.addItemList({ "6dB", "12dB", "18dB", "24dB" }, 1);
-    addAndMakeVisible(hpfSlopeBox);
-    addAndMakeVisible(hpfButton);
-    addAndMakeVisible(hpfLabel);
+    eqContent.addAndMakeVisible(hpfSlopeBox);
+    eqContent.addAndMakeVisible(hpfButton);
+    eqContent.addAndMakeVisible(hpfLabel);
     hpfLabel.setJustificationType(juce::Justification::centred);
 
     // LPF
     lpfFreqSlider.setLookAndFeel(&eqLookAndFeel);
     setupRotarySlider(lpfFreqSlider);
     lpfSlopeBox.addItemList({ "6dB", "12dB", "18dB", "24dB" }, 1);
-    addAndMakeVisible(lpfSlopeBox);
-    addAndMakeVisible(lpfButton);
-    addAndMakeVisible(lpfLabel);
+    eqContent.addAndMakeVisible(lpfSlopeBox);
+    eqContent.addAndMakeVisible(lpfButton);
+    eqContent.addAndMakeVisible(lpfLabel);
     lpfLabel.setJustificationType(juce::Justification::centred);
 
     // Low Shelf
@@ -73,9 +89,9 @@ MasterBusAudioProcessorEditor::MasterBusAudioProcessorEditor(MasterBusAudioProce
     lsGainSlider.setLookAndFeel(&eqLookAndFeel);
     setupRotarySlider(lsFreqSlider);
     setupRotarySlider(lsGainSlider);
-    addAndMakeVisible(lsButton);
-    addAndMakeVisible(lsFreqLabel);
-    addAndMakeVisible(lsGainLabel);
+    eqContent.addAndMakeVisible(lsButton);
+    eqContent.addAndMakeVisible(lsFreqLabel);
+    eqContent.addAndMakeVisible(lsGainLabel);
     lsFreqLabel.setJustificationType(juce::Justification::centred);
     lsGainLabel.setJustificationType(juce::Justification::centred);
 
@@ -84,9 +100,9 @@ MasterBusAudioProcessorEditor::MasterBusAudioProcessorEditor(MasterBusAudioProce
     hsGainSlider.setLookAndFeel(&eqLookAndFeel);
     setupRotarySlider(hsFreqSlider);
     setupRotarySlider(hsGainSlider);
-    addAndMakeVisible(hsButton);
-    addAndMakeVisible(hsFreqLabel);
-    addAndMakeVisible(hsGainLabel);
+    eqContent.addAndMakeVisible(hsButton);
+    eqContent.addAndMakeVisible(hsFreqLabel);
+    eqContent.addAndMakeVisible(hsGainLabel);
     hsFreqLabel.setJustificationType(juce::Justification::centred);
     hsGainLabel.setJustificationType(juce::Justification::centred);
 
@@ -102,25 +118,19 @@ MasterBusAudioProcessorEditor::MasterBusAudioProcessorEditor(MasterBusAudioProce
         setupRotarySlider(bandControls[i].qSlider);
 
         bandControls[i].enableButton.setButtonText(bandNames[i]);
-        addAndMakeVisible(bandControls[i].enableButton);
-        addAndMakeVisible(bandControls[i].freqLabel);
-        addAndMakeVisible(bandControls[i].gainLabel);
-        addAndMakeVisible(bandControls[i].qLabel);
+        eqContent.addAndMakeVisible(bandControls[i].enableButton);
+        eqContent.addAndMakeVisible(bandControls[i].freqLabel);
+        eqContent.addAndMakeVisible(bandControls[i].gainLabel);
+        eqContent.addAndMakeVisible(bandControls[i].qLabel);
         bandControls[i].freqLabel.setJustificationType(juce::Justification::centred);
         bandControls[i].gainLabel.setJustificationType(juce::Justification::centred);
         bandControls[i].qLabel.setJustificationType(juce::Justification::centred);
     }
 
     // EQ options
-    addAndMakeVisible(eqLinearPhaseButton);
-    addAndMakeVisible(eqMidSideButton);
-    addAndMakeVisible(eqBypassButton);
-
-    // Compressor Group
-    addAndMakeVisible(compGroup);
-    compGroup.setText("Compressor");
-    compGroup.setColour(juce::GroupComponent::outlineColourId, MasterBusLookAndFeel::Colors::compAccent);
-    compGroup.setColour(juce::GroupComponent::textColourId, MasterBusLookAndFeel::Colors::compAccent);
+    eqContent.addAndMakeVisible(eqLinearPhaseButton);
+    eqContent.addAndMakeVisible(eqMidSideButton);
+    eqContent.addAndMakeVisible(eqBypassButton);
 
     // Compressor sliders
     compThresholdSlider.setLookAndFeel(&compLookAndFeel);
@@ -147,16 +157,16 @@ MasterBusAudioProcessorEditor::MasterBusAudioProcessorEditor(MasterBusAudioProce
                          &compKneeLabel, &compMakeupLabel, &compMixLabel, &compScHpfLabel, &compLinkLabel })
     {
         label->setJustificationType(juce::Justification::centred);
-        addAndMakeVisible(label);
+        compContent.addAndMakeVisible(label);
     }
 
     compModeBox.addItemList({ "Clean", "Glue", "Punch", "Vintage" }, 1);
-    addAndMakeVisible(compModeBox);
+    compContent.addAndMakeVisible(compModeBox);
 
-    addAndMakeVisible(compAutoReleaseButton);
-    addAndMakeVisible(compScListenButton);
-    addAndMakeVisible(compMidSideButton);
-    addAndMakeVisible(compBypassButton);
+    compContent.addAndMakeVisible(compAutoReleaseButton);
+    compContent.addAndMakeVisible(compScListenButton);
+    compContent.addAndMakeVisible(compMidSideButton);
+    compContent.addAndMakeVisible(compBypassButton);
 
     // Output
     outputGainSlider.setLookAndFeel(&mainLookAndFeel);
@@ -273,7 +283,7 @@ void MasterBusAudioProcessorEditor::setupRotarySlider(juce::Slider& slider)
 {
     slider.setSliderStyle(juce::Slider::RotaryHorizontalVerticalDrag);
     slider.setTextBoxStyle(juce::Slider::TextBoxBelow, false, 60, 18);
-    addAndMakeVisible(slider);
+    // Note: We add sliders to parent based on which section they belong to
 }
 
 void MasterBusAudioProcessorEditor::setupSlider(juce::Slider& slider, juce::Label& label, const juce::String& suffix)
@@ -282,9 +292,13 @@ void MasterBusAudioProcessorEditor::setupSlider(juce::Slider& slider, juce::Labe
     slider.setTextBoxStyle(juce::Slider::TextBoxBelow, false, 50, 18);
     if (!suffix.isEmpty())
         slider.setTextValueSuffix(suffix);
-    addAndMakeVisible(slider);
     label.setJustificationType(juce::Justification::centred);
-    addAndMakeVisible(label);
+}
+
+void MasterBusAudioProcessorEditor::updatePanelVisibility()
+{
+    eqPanel.setVisible(eqPanelVisible);
+    compPanel.setVisible(compPanelVisible);
 }
 
 void MasterBusAudioProcessorEditor::timerCallback()
@@ -329,104 +343,137 @@ void MasterBusAudioProcessorEditor::resized()
 {
     auto bounds = getLocalBounds();
 
-    // Header area (A/B/C/D buttons)
+    // Header area
     auto headerArea = bounds.removeFromTop(40);
+
+    // A/B/C/D buttons in header
     auto abcdArea = headerArea.removeFromRight(200).reduced(5);
     int abcdWidth = abcdArea.getWidth() / 4;
     for (int i = 0; i < 4; ++i)
         abcdButtons[i].setBounds(abcdArea.removeFromLeft(abcdWidth).reduced(2));
 
-    // Main content
+    // Panel toggle buttons in header
+    auto toggleArea = headerArea.removeFromRight(160).reduced(5);
+    eqToggleButton.setBounds(toggleArea.removeFromLeft(75).reduced(2));
+    compToggleButton.setBounds(toggleArea.removeFromLeft(75).reduced(2));
+
+    // Main content area
     auto contentArea = bounds.reduced(10);
 
-    // Spectrum analyzer at top
-    auto analyzerArea = contentArea.removeFromTop(180);
-    spectrumAnalyzer.setBounds(analyzerArea.reduced(0, 0));
-
-    // Analyzer controls
-    auto analyzerControls = analyzerArea.removeFromBottom(25);
-    preButton.setBounds(analyzerControls.removeFromLeft(50));
-    postButton.setBounds(analyzerControls.removeFromLeft(50));
-    analyzerControls.removeFromLeft(10);
-    slopeSelector.setBounds(analyzerControls.removeFromLeft(100));
-
-    contentArea.removeFromTop(10);
-
-    // Bottom section: EQ, Compressor, Meters
-    auto bottomArea = contentArea;
-
-    // Meters on right
-    auto meterArea = bottomArea.removeFromRight(150);
+    // Meters on the right side (narrow strip)
+    auto meterArea = contentArea.removeFromRight(100);
     meterPanel.setBounds(meterArea);
 
-    bottomArea.removeFromRight(10);
+    contentArea.removeFromRight(10);
 
-    // EQ and Compressor side by side
-    int halfWidth = bottomArea.getWidth() / 2;
+    // Bottom toolbar area for output controls
+    auto bottomBar = contentArea.removeFromBottom(50);
 
-    // EQ Section
-    auto eqArea = bottomArea.removeFromLeft(halfWidth - 5);
-    eqGroup.setBounds(eqArea);
-    auto eqContent = eqArea.reduced(10, 20);
+    // Analyzer controls at bottom of analyzer area
+    auto analyzerControlsArea = contentArea.removeFromBottom(30);
+    preButton.setBounds(analyzerControlsArea.removeFromLeft(50).reduced(2));
+    postButton.setBounds(analyzerControlsArea.removeFromLeft(50).reduced(2));
+    analyzerControlsArea.removeFromLeft(10);
+    slopeSelector.setBounds(analyzerControlsArea.removeFromLeft(100).reduced(2));
 
-    // EQ controls layout
-    int knobSize = 55;
-    int labelHeight = 18;
+    // Output controls in bottom bar
+    int outputKnobSize = 45;
+    auto outputArea = bottomBar.removeFromLeft(outputKnobSize + 10);
+    outputGainSlider.setBounds(outputArea.removeFromTop(outputKnobSize));
+    outputGainLabel.setBounds(outputArea);
+
+    bottomBar.removeFromLeft(10);
+    globalBypassButton.setBounds(bottomBar.removeFromLeft(70).reduced(2, 10));
+    bottomBar.removeFromLeft(5);
+    monoButton.setBounds(bottomBar.removeFromLeft(50).reduced(2, 10));
+    dimButton.setBounds(bottomBar.removeFromLeft(50).reduced(2, 10));
+
+    // Spectrum analyzer takes the majority of remaining space (~70%)
+    spectrumAnalyzer.setBounds(contentArea);
+
+    // Calculate panel positions (overlay on top of analyzer)
+    int panelWidth = 450;
+    int panelHeight = 350;
+
+    if (eqPanelVisible)
+    {
+        auto eqBounds = contentArea.withWidth(panelWidth).withHeight(panelHeight);
+        eqBounds.setX(contentArea.getX() + 10);
+        eqBounds.setY(contentArea.getY() + 10);
+        eqPanel.setBounds(eqBounds);
+        layoutEQContent();
+    }
+
+    if (compPanelVisible)
+    {
+        auto compBounds = contentArea.withWidth(panelWidth).withHeight(panelHeight);
+        compBounds.setX(contentArea.getRight() - panelWidth - 10);
+        compBounds.setY(contentArea.getY() + 10);
+        compPanel.setBounds(compBounds);
+        layoutCompContent();
+    }
+}
+
+void MasterBusAudioProcessorEditor::layoutEQContent()
+{
+    auto bounds = eqContent.getLocalBounds();
+    int knobSize = 50;
+    int labelHeight = 16;
     int rowHeight = knobSize + labelHeight + 5;
 
     // Row 1: HPF, LPF, Low Shelf, High Shelf
-    auto row1 = eqContent.removeFromTop(rowHeight + 30);
+    auto row1 = bounds.removeFromTop(rowHeight + 25);
 
     // HPF
-    auto hpfArea = row1.removeFromLeft(80);
+    auto hpfArea = row1.removeFromLeft(70);
     hpfLabel.setBounds(hpfArea.removeFromTop(labelHeight));
-    hpfButton.setBounds(hpfArea.removeFromTop(20));
+    hpfButton.setBounds(hpfArea.removeFromTop(18));
     hpfFreqSlider.setBounds(hpfArea.removeFromTop(knobSize));
-    hpfSlopeBox.setBounds(hpfArea.removeFromTop(20).reduced(5, 0));
+    hpfSlopeBox.setBounds(hpfArea.removeFromTop(18).reduced(2, 0));
 
     row1.removeFromLeft(5);
 
     // LPF
-    auto lpfArea = row1.removeFromLeft(80);
+    auto lpfArea = row1.removeFromLeft(70);
     lpfLabel.setBounds(lpfArea.removeFromTop(labelHeight));
-    lpfButton.setBounds(lpfArea.removeFromTop(20));
+    lpfButton.setBounds(lpfArea.removeFromTop(18));
     lpfFreqSlider.setBounds(lpfArea.removeFromTop(knobSize));
-    lpfSlopeBox.setBounds(lpfArea.removeFromTop(20).reduced(5, 0));
+    lpfSlopeBox.setBounds(lpfArea.removeFromTop(18).reduced(2, 0));
 
     row1.removeFromLeft(10);
 
     // Low Shelf
-    auto lsArea = row1.removeFromLeft(130);
-    lsButton.setBounds(lsArea.removeFromTop(20).withWidth(40));
+    auto lsArea = row1.removeFromLeft(110);
+    lsButton.setBounds(lsArea.removeFromTop(18).withWidth(35));
     auto lsKnobs = lsArea.removeFromTop(knobSize);
-    lsFreqSlider.setBounds(lsKnobs.removeFromLeft(65));
-    lsGainSlider.setBounds(lsKnobs.removeFromLeft(65));
+    lsFreqSlider.setBounds(lsKnobs.removeFromLeft(55));
+    lsGainSlider.setBounds(lsKnobs.removeFromLeft(55));
     auto lsLabels = lsArea.removeFromTop(labelHeight);
-    lsFreqLabel.setBounds(lsLabels.removeFromLeft(65));
-    lsGainLabel.setBounds(lsLabels.removeFromLeft(65));
+    lsFreqLabel.setBounds(lsLabels.removeFromLeft(55));
+    lsGainLabel.setBounds(lsLabels.removeFromLeft(55));
 
     row1.removeFromLeft(10);
 
     // High Shelf
-    auto hsArea = row1.removeFromLeft(130);
-    hsButton.setBounds(hsArea.removeFromTop(20).withWidth(40));
+    auto hsArea = row1.removeFromLeft(110);
+    hsButton.setBounds(hsArea.removeFromTop(18).withWidth(35));
     auto hsKnobs = hsArea.removeFromTop(knobSize);
-    hsFreqSlider.setBounds(hsKnobs.removeFromLeft(65));
-    hsGainSlider.setBounds(hsKnobs.removeFromLeft(65));
+    hsFreqSlider.setBounds(hsKnobs.removeFromLeft(55));
+    hsGainSlider.setBounds(hsKnobs.removeFromLeft(55));
     auto hsLabels = hsArea.removeFromTop(labelHeight);
-    hsFreqLabel.setBounds(hsLabels.removeFromLeft(65));
-    hsGainLabel.setBounds(hsLabels.removeFromLeft(65));
+    hsFreqLabel.setBounds(hsLabels.removeFromLeft(55));
+    hsGainLabel.setBounds(hsLabels.removeFromLeft(55));
 
-    eqContent.removeFromTop(10);
+    bounds.removeFromTop(5);
 
-    // Row 2: Parametric bands
-    auto row2 = eqContent.removeFromTop(rowHeight * 2);
+    // Row 2: Parametric bands (2x2 layout)
+    auto row2 = bounds.removeFromTop(rowHeight * 2);
     int bandWidth = row2.getWidth() / 4;
 
     for (int i = 0; i < 4; ++i)
     {
         auto bandArea = row2.removeFromLeft(bandWidth);
-        bandControls[i].enableButton.setBounds(bandArea.removeFromTop(20).withWidth(30).withX(bandArea.getX() + bandWidth/2 - 15));
+        bandControls[i].enableButton.setBounds(bandArea.removeFromTop(18).withWidth(25).withX(bandArea.getX() + bandWidth/2 - 12));
 
         auto knobRow1 = bandArea.removeFromTop(knobSize);
         bandControls[i].freqSlider.setBounds(knobRow1);
@@ -442,99 +489,110 @@ void MasterBusAudioProcessorEditor::resized()
         bandControls[i].qLabel.setBounds(labelRow);
     }
 
-    // EQ Options
-    auto eqOptionsArea = eqContent.removeFromTop(30);
-    eqLinearPhaseButton.setBounds(eqOptionsArea.removeFromLeft(100));
-    eqMidSideButton.setBounds(eqOptionsArea.removeFromLeft(60));
-    eqBypassButton.setBounds(eqOptionsArea.removeFromRight(70));
+    bounds.removeFromTop(5);
 
-    bottomArea.removeFromLeft(10);
+    // EQ Options row
+    auto optionsRow = bounds.removeFromTop(25);
+    eqLinearPhaseButton.setBounds(optionsRow.removeFromLeft(90).reduced(2));
+    eqMidSideButton.setBounds(optionsRow.removeFromLeft(50).reduced(2));
+    eqBypassButton.setBounds(optionsRow.removeFromRight(60).reduced(2));
 
-    // Compressor Section
-    auto compArea = bottomArea;
-    compGroup.setBounds(compArea);
-    auto compContent = compArea.reduced(10, 20);
+    // Add sliders to eqContent
+    eqContent.addAndMakeVisible(hpfFreqSlider);
+    eqContent.addAndMakeVisible(lpfFreqSlider);
+    eqContent.addAndMakeVisible(lsFreqSlider);
+    eqContent.addAndMakeVisible(lsGainSlider);
+    eqContent.addAndMakeVisible(hsFreqSlider);
+    eqContent.addAndMakeVisible(hsGainSlider);
+    for (int i = 0; i < 4; ++i)
+    {
+        eqContent.addAndMakeVisible(bandControls[i].freqSlider);
+        eqContent.addAndMakeVisible(bandControls[i].gainSlider);
+        eqContent.addAndMakeVisible(bandControls[i].qSlider);
+    }
+}
 
-    // Comp Row 1: Threshold, Ratio, Knee
-    auto compRow1 = compContent.removeFromTop(rowHeight);
-    int compKnobWidth = compRow1.getWidth() / 3;
+void MasterBusAudioProcessorEditor::layoutCompContent()
+{
+    auto bounds = compContent.getLocalBounds();
+    int knobSize = 50;
+    int labelHeight = 16;
+    int rowHeight = knobSize + labelHeight + 5;
 
-    auto threshArea = compRow1.removeFromLeft(compKnobWidth);
+    // Row 1: Threshold, Ratio, Knee
+    auto row1 = bounds.removeFromTop(rowHeight);
+    int compKnobWidth = row1.getWidth() / 3;
+
+    auto threshArea = row1.removeFromLeft(compKnobWidth);
     compThresholdSlider.setBounds(threshArea.removeFromTop(knobSize));
     compThreshLabel.setBounds(threshArea.removeFromTop(labelHeight));
 
-    auto ratioArea = compRow1.removeFromLeft(compKnobWidth);
+    auto ratioArea = row1.removeFromLeft(compKnobWidth);
     compRatioSlider.setBounds(ratioArea.removeFromTop(knobSize));
     compRatioLabel.setBounds(ratioArea.removeFromTop(labelHeight));
 
-    auto kneeArea = compRow1;
+    auto kneeArea = row1;
     compKneeSlider.setBounds(kneeArea.removeFromTop(knobSize));
     compKneeLabel.setBounds(kneeArea.removeFromTop(labelHeight));
 
-    compContent.removeFromTop(5);
+    bounds.removeFromTop(5);
 
-    // Comp Row 2: Attack, Release, Makeup
-    auto compRow2 = compContent.removeFromTop(rowHeight);
+    // Row 2: Attack, Release, Makeup
+    auto row2 = bounds.removeFromTop(rowHeight);
 
-    auto attackArea = compRow2.removeFromLeft(compKnobWidth);
+    auto attackArea = row2.removeFromLeft(compKnobWidth);
     compAttackSlider.setBounds(attackArea.removeFromTop(knobSize));
     compAttackLabel.setBounds(attackArea.removeFromTop(labelHeight));
 
-    auto releaseArea = compRow2.removeFromLeft(compKnobWidth);
+    auto releaseArea = row2.removeFromLeft(compKnobWidth);
     compReleaseSlider.setBounds(releaseArea.removeFromTop(knobSize));
     compReleaseLabel.setBounds(releaseArea.removeFromTop(labelHeight));
 
-    auto makeupArea = compRow2;
+    auto makeupArea = row2;
     compMakeupSlider.setBounds(makeupArea.removeFromTop(knobSize));
     compMakeupLabel.setBounds(makeupArea.removeFromTop(labelHeight));
 
-    compContent.removeFromTop(5);
+    bounds.removeFromTop(5);
 
-    // Comp Row 3: Mix, SC HPF, Stereo Link
-    auto compRow3 = compContent.removeFromTop(rowHeight);
+    // Row 3: Mix, SC HPF, Stereo Link
+    auto row3 = bounds.removeFromTop(rowHeight);
 
-    auto mixArea = compRow3.removeFromLeft(compKnobWidth);
+    auto mixArea = row3.removeFromLeft(compKnobWidth);
     compMixSlider.setBounds(mixArea.removeFromTop(knobSize));
     compMixLabel.setBounds(mixArea.removeFromTop(labelHeight));
 
-    auto scHpfArea = compRow3.removeFromLeft(compKnobWidth);
+    auto scHpfArea = row3.removeFromLeft(compKnobWidth);
     compScHpfSlider.setBounds(scHpfArea.removeFromTop(knobSize));
     compScHpfLabel.setBounds(scHpfArea.removeFromTop(labelHeight));
 
-    auto linkArea = compRow3;
+    auto linkArea = row3;
     compStereoLinkSlider.setBounds(linkArea.removeFromTop(knobSize));
     compLinkLabel.setBounds(linkArea.removeFromTop(labelHeight));
 
-    compContent.removeFromTop(5);
+    bounds.removeFromTop(5);
 
-    // Comp Row 4: Mode selector and options
-    auto compRow4 = compContent.removeFromTop(30);
-    compModeBox.setBounds(compRow4.removeFromLeft(100));
-    compRow4.removeFromLeft(10);
-    compAutoReleaseButton.setBounds(compRow4.removeFromLeft(80));
-    compScListenButton.setBounds(compRow4.removeFromLeft(80));
+    // Row 4: Mode selector and options
+    auto row4 = bounds.removeFromTop(25);
+    compModeBox.setBounds(row4.removeFromLeft(90).reduced(2));
+    row4.removeFromLeft(5);
+    compAutoReleaseButton.setBounds(row4.removeFromLeft(70).reduced(2));
+    compScListenButton.setBounds(row4.removeFromLeft(70).reduced(2));
 
-    compContent.removeFromTop(5);
+    bounds.removeFromTop(5);
 
-    // Comp Row 5: More options
-    auto compRow5 = compContent.removeFromTop(30);
-    compMidSideButton.setBounds(compRow5.removeFromLeft(60));
-    compBypassButton.setBounds(compRow5.removeFromRight(70));
+    // Row 5: More options
+    auto row5 = bounds.removeFromTop(25);
+    compMidSideButton.setBounds(row5.removeFromLeft(50).reduced(2));
+    compBypassButton.setBounds(row5.removeFromRight(60).reduced(2));
 
-    compContent.removeFromTop(10);
-
-    // Output section
-    auto outputArea = compContent.removeFromTop(rowHeight);
-    int outputWidth = outputArea.getWidth() / 3;
-
-    auto outGainArea = outputArea.removeFromLeft(outputWidth);
-    outputGainSlider.setBounds(outGainArea.removeFromTop(knobSize));
-    outputGainLabel.setBounds(outGainArea.removeFromTop(labelHeight));
-
-    auto bypassArea = outputArea.removeFromLeft(outputWidth);
-    globalBypassButton.setBounds(bypassArea.reduced(10, 15));
-
-    auto monitorArea = outputArea;
-    monoButton.setBounds(monitorArea.removeFromTop(25).reduced(5, 2));
-    dimButton.setBounds(monitorArea.removeFromTop(25).reduced(5, 2));
+    // Add sliders to compContent
+    compContent.addAndMakeVisible(compThresholdSlider);
+    compContent.addAndMakeVisible(compRatioSlider);
+    compContent.addAndMakeVisible(compAttackSlider);
+    compContent.addAndMakeVisible(compReleaseSlider);
+    compContent.addAndMakeVisible(compKneeSlider);
+    compContent.addAndMakeVisible(compMakeupSlider);
+    compContent.addAndMakeVisible(compMixSlider);
+    compContent.addAndMakeVisible(compScHpfSlider);
+    compContent.addAndMakeVisible(compStereoLinkSlider);
 }

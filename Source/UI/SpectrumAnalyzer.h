@@ -40,8 +40,9 @@ public:
 private:
     void processFFT(const std::vector<float>& buffer, std::array<float, NUM_BINS>& magnitudes);
     void drawSpectrum(juce::Graphics& g, const std::array<float, NUM_BINS>& magnitudes,
-                      juce::Colour colour, float alpha);
+                      juce::Colour colour, float alpha, bool drawFill);
     void drawGrid(juce::Graphics& g);
+    juce::Rectangle<float> getAnalyzerBounds() const;
     float getFrequencyForBin(int bin) const;
     float getXForFrequency(float freq) const;
     float getYForDecibels(float db) const;
@@ -77,8 +78,8 @@ private:
     bool peakHoldEnabled = true;
 
     // Display range
-    float minDb = -90.0f;
-    float maxDb = 6.0f;
+    float minDb = -60.0f;
+    float maxDb = 0.0f;
     float minFreq = 20.0f;
     float maxFreq = 20000.0f;
 

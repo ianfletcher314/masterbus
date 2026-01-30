@@ -47,7 +47,7 @@
  #define JucePlugin_Desc                   "Mastering EQ and Compressor"
 #endif
 #ifndef  JucePlugin_Manufacturer
- #define JucePlugin_Manufacturer           "Compstortion"
+ #define JucePlugin_Manufacturer           "Fletcher"
 #endif
 #ifndef  JucePlugin_ManufacturerWebsite
  #define JucePlugin_ManufacturerWebsite    "https://github.com/ianfletcher314/masterbus"
@@ -110,10 +110,10 @@
  #define JucePlugin_AUManufacturerCode     JucePlugin_ManufacturerCode
 #endif
 #ifndef  JucePlugin_CFBundleIdentifier
- #define JucePlugin_CFBundleIdentifier     com.Compstortion.MasterBus
+ #define JucePlugin_CFBundleIdentifier     com.Fletcher.MasterBus
 #endif
 #ifndef  JucePlugin_AAXIdentifier
- #define JucePlugin_AAXIdentifier          com.Compstortion.MasterBus
+ #define JucePlugin_AAXIdentifier          com.Fletcher.MasterBus
 #endif
 #ifndef  JucePlugin_AAXManufacturerCode
  #define JucePlugin_AAXManufacturerCode    JucePlugin_ManufacturerCode
@@ -137,7 +137,7 @@
  #define JucePlugin_IAASubType             JucePlugin_PluginCode
 #endif
 #ifndef  JucePlugin_IAAName
- #define JucePlugin_IAAName                "Compstortion: MasterBus"
+ #define JucePlugin_IAAName                "Fletcher: MasterBus"
 #endif
 #ifndef  JucePlugin_VSTNumMidiInputs
  #define JucePlugin_VSTNumMidiInputs       16
@@ -152,10 +152,10 @@
  #define JucePlugin_ARATransformationFlags  0
 #endif
 #ifndef  JucePlugin_ARAFactoryID
- #define JucePlugin_ARAFactoryID           "com.Compstortion.MasterBus.factory"
+ #define JucePlugin_ARAFactoryID           "com.Fletcher.MasterBus.factory"
 #endif
 #ifndef  JucePlugin_ARADocumentArchiveID
- #define JucePlugin_ARADocumentArchiveID   "com.Compstortion.MasterBus.aradocumentarchive.1.0.0"
+ #define JucePlugin_ARADocumentArchiveID   "com.Fletcher.MasterBus.aradocumentarchive.1.0.0"
 #endif
 #ifndef  JucePlugin_ARACompatibleArchiveIDs
  #define JucePlugin_ARACompatibleArchiveIDs  ""

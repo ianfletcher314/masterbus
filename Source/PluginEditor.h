@@ -6,6 +6,63 @@
 #include "UI/SpectrumAnalyzer.h"
 #include "UI/MeterComponents.h"
 
+//==============================================================================
+// Collapsible panel component for EQ and Compressor sections
+class CollapsiblePanel : public juce::Component
+{
+public:
+    CollapsiblePanel(const juce::String& title, juce::Colour accentColour)
+        : titleText(title), accent(accentColour)
+    {
+        setOpaque(false);
+    }
+
+    void paint(juce::Graphics& g) override
+    {
+        auto bounds = getLocalBounds().toFloat();
+
+        // Semi-transparent dark background
+        g.setColour(juce::Colour(0xe0181818));
+        g.fillRoundedRectangle(bounds, 8.0f);
+
+        // Border with accent color
+        g.setColour(accent.withAlpha(0.5f));
+        g.drawRoundedRectangle(bounds.reduced(0.5f), 8.0f, 1.0f);
+
+        // Title bar
+        auto titleBar = bounds.removeFromTop(28.0f);
+        g.setColour(accent.withAlpha(0.15f));
+        g.fillRoundedRectangle(titleBar.reduced(1.0f), 7.0f);
+
+        g.setColour(accent);
+        g.setFont(juce::Font(juce::FontOptions(14.0f).withStyle("Bold")));
+        g.drawText(titleText, titleBar.reduced(10.0f, 0.0f), juce::Justification::centredLeft);
+    }
+
+    void setContentComponent(juce::Component* content)
+    {
+        contentComponent = content;
+        if (content != nullptr)
+            addAndMakeVisible(content);
+    }
+
+    void resized() override
+    {
+        if (contentComponent != nullptr)
+        {
+            auto bounds = getLocalBounds();
+            bounds.removeFromTop(28); // Title bar
+            contentComponent->setBounds(bounds.reduced(8, 4));
+        }
+    }
+
+private:
+    juce::String titleText;
+    juce::Colour accent;
+    juce::Component* contentComponent = nullptr;
+};
+
+//==============================================================================
 class MasterBusAudioProcessorEditor : public juce::AudioProcessorEditor,
                                        public juce::Timer
 {
@@ -25,25 +82,39 @@ private:
     EQLookAndFeel eqLookAndFeel;
     CompressorLookAndFeel compLookAndFeel;
 
-    // Spectrum analyzer
+    // Spectrum analyzer (main view)
     SpectrumAnalyzer spectrumAnalyzer;
     juce::ToggleButton preButton { "Pre" };
     juce::ToggleButton postButton { "Post" };
     juce::ComboBox slopeSelector;
 
-    // Meter panel
+    // Meter panel (side)
     MeterPanel meterPanel;
 
     // A/B/C/D buttons
     std::array<juce::TextButton, 4> abcdButtons;
 
+    // Panel toggle buttons
+    juce::TextButton eqToggleButton { "EQ" };
+    juce::TextButton compToggleButton { "COMP" };
+    bool eqPanelVisible = false;
+    bool compPanelVisible = false;
+
+    // Collapsible panels
+    CollapsiblePanel eqPanel { "EQUALIZER", MasterBusLookAndFeel::Colors::eqAccent };
+    CollapsiblePanel compPanel { "COMPRESSOR", MasterBusLookAndFeel::Colors::compAccent };
+
+    // EQ Content component
+    juce::Component eqContent;
+
+    // Compressor Content component
+    juce::Component compContent;
+
     // Preset selector
     juce::ComboBox presetSelector;
     juce::TextButton saveButton { "Save" };
 
-    // EQ Section
-    juce::GroupComponent eqGroup;
-
+    // EQ Section controls
     // HPF controls
     juce::Slider hpfFreqSlider;
     juce::ComboBox hpfSlopeBox;
@@ -84,9 +155,7 @@ private:
     juce::ToggleButton eqMidSideButton { "M/S" };
     juce::ToggleButton eqBypassButton { "Bypass" };
 
-    // Compressor Section
-    juce::GroupComponent compGroup;
-
+    // Compressor Section controls
     juce::Slider compThresholdSlider, compRatioSlider, compAttackSlider;
     juce::Slider compReleaseSlider, compKneeSlider, compMakeupSlider;
     juce::Slider compMixSlider, compScHpfSlider, compStereoLinkSlider;
@@ -172,6 +241,9 @@ private:
 
     void setupSlider(juce::Slider& slider, juce::Label& label, const juce::String& suffix = "");
     void setupRotarySlider(juce::Slider& slider);
+    void layoutEQContent();
+    void layoutCompContent();
+    void updatePanelVisibility();
 
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR(MasterBusAudioProcessorEditor)
 };
