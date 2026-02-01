@@ -1,0 +1,36 @@
+Background Image Information
+============================
+
+Filename: brazilian_sunset_teal_orange.jpg
+
+Source: Unsplash (https://unsplash.com)
+Image URL: https://images.unsplash.com/photo-1500382017468-9049fed747ef
+Photographer: Search "sunset landscape field" on Unsplash for attribution
+
+License: Unsplash License
+- Free for commercial and non-commercial use
+- No attribution required (but appreciated)
+- Cannot be sold without modification
+- Full license: https://unsplash.com/license
+
+Why it matches the MasterBus plugin color scheme:
+------------------------------------------------
+The MasterBus plugin uses a professional multi-accent color scheme:
+- Primary accent: Blue (#4a9eff)
+- EQ accent: Teal (#00d4aa)
+- Compressor accent: Orange (#ff6b4a)
+- Background: Dark (#1a1a1a)
+- Text: Light (#f0f0f0)
+- Meter colors: Green/Yellow/Red
+
+This sunset landscape image features:
+- Warm orange/amber tones that complement the compressor accent color
+- Teal/blue sky elements matching the EQ section accent
+- Professional, balanced composition suitable for a mastering plugin
+- Brazilian agricultural landscape aesthetic (pampas/farmland)
+
+Recommended usage:
+- Apply with very low opacity (8-12%) to maintain professional appearance
+- The horizontal composition works well with the plugin's wide layout
+- Color balance provides subtle warmth without overwhelming the UI
+- Enhances the plugin's "final master" polished aesthetic
